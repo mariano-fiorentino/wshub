@@ -1,0 +1,38 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:       cpufrequtils
+# Required-Start: $remote_fs loadcpufreq
+# Required-Stop:
+# Default-Start:  2 3 4 5
+# Default-Stop:
+# Short-Description: set CPUFreq kernel parameters
+# Description: utilities to deal with CPUFreq Linux
+#	kernel support
+### END INIT INFO
+#
+
+DESC="Starting WebSocket PHP Demon"
+
+PHP=/usr/bin/php
+SERVER_ROOT=$(pwd)
+PID_FILE="$SERVER_ROOT/run/wsphpd.pid"
+
+RETVAL=0
+case "$1" in
+	start)
+		echo "$DESC"
+        $PHP -f server.php &
+        echo $! >> $PID_FILE
+		echo  "done!"
+		;;
+	stop)
+
+        kill -15 $(cat $PID_FILE);
+        rm $PID_FILE;
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+		exit 1
+esac
+
+exit 0
