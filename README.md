@@ -3,7 +3,7 @@ wshub
 
 Php websocket platform 
 
-The html client was taken from:
+Liberally inspired from:
 
 http://code.google.com/p/phpwebsocket/
  
