@@ -1,4 +1,24 @@
 <?php
+/**
+ * WsHub
+ * Copyright 2012 Mariano Fiorentino <mariano.fiorentino NOSPAMat gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Library General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
+
 namespace WebSocket;
 
 class Headers {
@@ -17,6 +37,9 @@ class Headers {
 
     private $_buffer = '';
 
+    private $_handler;
+    private $_instance;
+
     private $_outHeaders = array(
         self::ACTION_TYPE => 'Websocket',
         self::ACTION_NAME => 'Upgrade',
@@ -27,11 +50,19 @@ class Headers {
     public function __construct ($buffer)
     {
         $this->_inputHeaders = http_parse_headers($buffer);
+
+        $this->_handler = self::HANDLER_NS . str_replace('/', '\\', dirname($this->_inputHeaders['Request Url']));
+        $this->_instance = basename($this->_inputHeaders['Request Url']);
     }
 
     public function getHandler()
     {
-        return self::HANDLER_NS . str_replace('/','\\',$this->_inputHeaders['Request Url']);
+        return $this->_handler;
+    }
+
+    public function getInstance()
+    {
+        return $this->_instance;
     }
 
     public function getResponseHeaders ()
