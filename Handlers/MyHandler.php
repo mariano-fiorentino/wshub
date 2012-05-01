@@ -29,6 +29,7 @@ class MyHandler extends WebSocket\HandlerAbstract {
     {
         // send this to all the clients in the $clients array (except the first one, which is a listening socket)
         foreach ($clients as $send_sock) {
+
             // if its the listening sock or the client that we got the message from,
             //go to the next one in the list
             if ($send_sock == $origin) continue;
