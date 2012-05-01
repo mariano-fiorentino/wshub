@@ -1,12 +1,37 @@
 <?php
 /**
-* Web Socket Manager
-*
-* @class        Manager
-* @package      WebSocket
-* @version      $Id$
-* @author       [MF]
-*/
+ * WsHub
+ * Copyright 2012 Mariano Fiorentino <mariano.fiorentino at gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Library General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public
+ * License along with this program; if not, write to the
+ * Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
+
+/**
+ * Web Socket Manager
+ * Manage new connection and dispach to handlers
+ *
+ * @class        Manager
+ * @package      WebSocket
+ * @version      $Id$
+ * @author       [MF]
+ */
+
+/**
+ * @namespace
+ */
 namespace WebSocket;
 
 use Handlers as Handlers;
@@ -15,14 +40,52 @@ class Manager {
 
     const BYTE_READS = '2048';
 
-    private $sockets;
+    /**
+     * List of connected sockets
+     *
+     * @var array
+     */
+    private $sockets = array();
+
+    /**
+    * Listening socket
+    */
     private $master;
+
+    /**
+    * Maps of clients/handlers
+    */
     private $readersMap;
+
+    /**
+    * host
+    */
     private $host = 'localhost';
+
+    /**
+    * Destination port
+    */
     private $port = 10100;
+
+    /**
+    * Global max connections
+    */
     private $maxConnection = 50;
+
+    /**
+    * Time interval for checking new data
+    */
     private $polling = 5;
+
+    /**
+    * List of available Handlers
+    */
     private $handlersAvailable = array();
+
+    /**
+    * Maps instance/Handlers
+    */
+    private $instanceMap;
 
     const HANDLERS_NS = '\Handlers\\';
 
@@ -49,7 +112,9 @@ class Manager {
 
         $this->master = $this->__createMaster($this->host, $this->port);
         $this->sockets[(int)$this->master] = $this->master;
-        $this->readersMap = array();//new SplObjectStorage();
+        $this->readersMap = array();//
+
+        $this->instanceMap = array();//
 
         $iterator = new \DirectoryIterator($handlerConf['path']);
         foreach ($iterator as $fileinfo) {
@@ -124,11 +189,22 @@ class Manager {
 
         $objHeader = new Headers($newUser->read(self::BYTE_READS));
         $handler = $objHeader->getHandler();
+        $instance = $objHeader->getInstance();
 
         if (in_array($handler, $this->handlersAvailable) && $newUser->write($objHeader->getResponseHeaders())) {
 
             $newUser->handshakeDone();
-            $this->readersMap[(int)$newsock] = $handler::getInstance($newsock, $newUser);
+
+            if (isset($this->instanceMap[$handler.'/'.$instance])) {
+
+                $handlerObj = $this->instanceMap[$handler.'/'.$instance]->getInstance($newsock, $newUser);
+            } else {
+
+                $handlerObj = new $handler($instance, $newsock, $newUser);
+                $this->instanceMap[$handler.'/'.$instance] = $handlerObj;
+            }
+
+            $this->readersMap[(int)$newsock] = $handlerObj;
             socket_getpeername($newsock, $ip);
             echo "New client connected: {$ip}\n";
             // remove the listening socket from the clients-with-data array
