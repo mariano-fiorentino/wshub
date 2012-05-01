@@ -1,14 +1,4 @@
 #!/bin/sh
-### BEGIN INIT INFO
-# Provides:       cpufrequtils
-# Required-Start: $remote_fs loadcpufreq
-# Required-Stop:
-# Default-Start:  2 3 4 5
-# Default-Stop:
-# Short-Description: set CPUFreq kernel parameters
-# Description: utilities to deal with CPUFreq Linux
-#	kernel support
-### END INIT INFO
 #
 
 DESC="Starting WebSocket PHP Demon"
