@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+	<head>
+
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<title>WebSocket</title>
+		<style type="text/css">
+			html , body {
+				font: normal 0.9em arial , helvetica;
+			}
+			
+			#log {
+				width: 440px;
+				height: 200px;
+				border: 1px solid #7F9DB9;
+				overflow: auto;
+			}
+			
+			#msg {
+				width: 330px;
+			}
+
+		</style>
+			
+		<script type="text/javascript">
+			var socket;
+			var socket2;
+
+			function init () {
+				var host = "ws://localhost:8282/MyHandler/Inst1";
+				var host2 = "ws://localhost:8282/MyHandler/Inst2";
+				
+				try {
+					// Firefox accept only MozWebSocket
+					socket = ("MozWebSocket" in window ? new MozWebSocket (host) : new WebSocket(host));
+					socket2 = ("MozWebSocket" in window ? new MozWebSocket (host2) : new WebSocket(host2));
+					log ('WebSocket - status ' + socket.readyState);
+					
+					socket.onopen = function (msg) {
+						log ("Welcome - status " + this.readyState);
+					}
+					
+					socket.onmessage = function (msg) {
+						log ("Received: " + msg.data);
+					}
+
+					socket.onclose = function (msg) {
+						log ("Disconnected - status " + this.readyState); 
+					}
+					socket2.onopen = function (msg) {
+						log ("Welcome - status " + this.readyState);
+					}
+					
+					socket2.onmessage = function (msg) {
+						
+						$("div1").innerHTML=msg.data;		
+						
+					        //alert("arrivato");	
+					}
+
+					socket2.onclose = function (msg) {
+						log ("Disconnected - status " + this.readyState); 
+					}
+
+				}
+				catch (ex) {
+					log (ex);
+				}
+				
+				$("msg2").focus ();
+			}
+
+			function send () {
+				var txt, msg;
+				
+				txt = $("msg2");
+				msg = txt.value;
+				
+				if (!msg) {
+					alert ("Message can not be empty");
+					return;
+				}
+
+				txt.value = "";
+				txt.focus ();
+				
+				try {
+					socket.send (msg);
+					log ('Sent: ' + msg);
+				}
+				catch (ex) {
+					log (ex);
+				}
+			}
+			function send2 () {
+				var txt, msg;
+				
+				txt = $("div1");
+				msg = txt.innerHTML;
+				
+				if (!msg) {
+					alert ("Message can not be empty");
+					return;
+				}
+
+				txt.innerHTML = "trascina il contenuto qui dentro per inviarlo puoi inviare il lettore video se lo trascini dal fianco";
+				txt.focus ();
+				
+				try {
+					alert(socket2);
+					socket2.send (msg);
+				}
+				catch (ex) {
+					log (ex);
+				}
+			}
+			
+			function quit () {
+				log ("Goodbye!");
+				socket.close ();
+				socket = null;
+			}
+
+			// Utilities
+			function $ (id) {
+				return document.getElementById (id);
+			}
+			
+			function log (msg) {
+				$("log").innerHTML += "<br>" + msg;
+			}
+			
+			function onkey (event) {
+				if (event.keyCode == 13) {
+					send();
+				}
+			}
+			function allowDrop(ev)
+			{
+				ev.preventDefault();
+			}
+			function drag(ev)
+			{
+				ev.dataTransfer.effectAllowed='copy';
+			      	ev.dataTransfer.setData("Text", ev.target.id);
+			}
+
+			function drop(ev)
+			{
+				var data=ev.dataTransfer.getData("Text");
+				//alert(document.getElementById(data));
+				ev.target.innerHTML=document.getElementById(data).innerHTML;
+				send2();
+				//ev.preventDefault();
+			}
+			function drop2(ev)
+			{
+				var data=ev.dataTransfer.getData("Text");
+				ev.target.src=document.getElementById(data).innerHTML;
+				//ev.preventDefault();
+			}
+		</script>
+	</head>
+	<body onload="init ();">
+		<h3>WebSocket Prova</h3>
+		<div id="dwrap" >			
+		<div id="log" draggable="true"  ondragstart="drag(event)" ></div>
+		<input id="msg2" type="textbox"  onkeypress="onkey (event);" />
+		<button onclick="send ();">Invia testo</button>
+		<h2>Lista film (trascina il titolo nel lettore per visualizzare)</h2>
+		<div id="video_disp" draggable="true"  ondragstart="drag(event)"> mov_bbb.mp4 </div>
+		
+		<div id="msg" draggable="true" ondragstart="drag(event)"><video  id="video1" ondrop="drop2(event)" ondragover="allowDrop(event)" src="" controls></video></div>
+		</div>
+		
+		<button onclick="quit ();">Quit</button>
+		
+		<div id="div1" style="border:1px solid black; color:green; width:300px; height:35px; " ondrop="drop(event)" ondragover="allowDrop(event)">trascina il contenuto qui dentro per inviarlo puoi inviare il lettore video se lo trascini dal fianco</div>
+
+	</body>
+</html>
