@@ -1,0 +1,10 @@
+- Auth excepetions
+- Buffers over 127 Bytes
+- Binary io
+- Multiple io frames
+- Logs
+- Docs
+- Hiphop support
+- clone instance
+- deploy handlers
+- limits

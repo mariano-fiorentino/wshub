@@ -1,0 +1,11 @@
+Mariano Fiorentino - WsHub
+Copyright (c) 2012, Sencha, Inc.
+All rights reserved.
+
+Open Source License
+------------------------------------------------------------------------------------------
+WsHub is licensed under the terms of the Open Source GPL 2.0 license.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT OF THIRD-PARTY INTELLECTUAL PROPERTY RIGHTS.  See the GNU
+General Public License for more details.
