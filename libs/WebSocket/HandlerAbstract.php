@@ -23,9 +23,8 @@ namespace WebSocket;
 
 abstract class HandlerAbstract {
 
-    private $users;
-
-    private $instanceName;
+    private $_users;
+    private $_instanceName;
 
     /**
     * La variabile statica privata che conterrà l'istanza univoca
@@ -34,40 +33,40 @@ abstract class HandlerAbstract {
     //private static $instance = null;
     public function getInstance($sock, Client $socket)
     {
-        $this->_addClient($sock, $socket);
+        $this->addClient($sock, $socket);
         return $this;
     }
 
     public function __construct($name, $sock, Client $user)
     {
-        $this->users =  new ConnectionsPool();
-        $this->instanceName = $name;
-        $this->_addClient($sock, $user);
+        $this->_users =  new ConnectionsPool();
+        $this->_instanceName = $name;
+        $this->addClient($sock, $user);
     }
 
-    public function _addClient($sock, Client $user)
+    public function addClient($sock, Client $user)
     {
-        $this->users->addClient($sock, $user);
+        $this->_users->addClient($sock, $user);
     }
 
     public function setInstanceName($name)
     {
-        $this->instanceName = $name;
+        $this->_instanceName = $name;
     }
 
     public function getInstanceName()
     {
-        return $this->instanceName;
+        return $this->_instanceName;
     }
 
     public function removeClient($idx)
     {
-        $this->users->offsetUnset($idx);
+        $this->_users->offsetUnset($idx);
     }
 
     public function getClient($resource)
     {
-        return $this->users->offsetGet((int)$resource);
+        return $this->_users->offsetGet((int)$resource);
     }
 
     public function dispatch (Client $origin, Frame $data)
@@ -80,7 +79,7 @@ abstract class HandlerAbstract {
             pcntl_wait($status);
         } else {
             // we are the child
-            $this->process($this->users, $origin, $data);
+            $this->process($this->_users, $origin, $data);
             exit(0);
         }
     }

@@ -24,6 +24,7 @@ namespace WebSocket\FrameParts;
 class Mask {
 
     private $frameMask = array();
+    const MASK_LENGTH = 4;
 
     public function __construct(array $array)
     {
@@ -32,6 +33,15 @@ class Mask {
 
     public function getMask()
     {
+        return $this->frameMask;
+    }
+
+    public function buildChunkedMask()
+    {
+        for ($i = 0; $i < self::MASK_LENGTH; $i++) {
+
+            $this->frameMask[] = rand(0,255);
+        }
         return $this->frameMask;
     }
 }

@@ -41,51 +41,47 @@ class Manager {
     const BYTE_READS = '2048';
 
     /**
-     * List of connected sockets
-     *
-     * @var array
-     */
-    private $sockets = array();
-
-    /**
     * Listening socket
     */
-    private $master;
-
-    /**
-    * Maps of clients/handlers
-    */
-    private $readersMap;
+    private $_master;
 
     /**
     * host
     */
-    private $host = 'localhost';
+    private $_host = 'localhost';
 
     /**
     * Destination port
     */
-    private $port = 10100;
+    private $_port = 10100;
 
     /**
     * Global max connections
     */
-    private $maxConnection = 50;
+    private $_maxConnection = 50;
 
     /**
     * Time interval for checking new data
     */
-    private $polling = 5;
+    private $_polling = 5;
 
     /**
     * List of available Handlers
     */
-    private $handlersAvailable = array();
+    private $_handlersAvailable = array();
+
+    /**
+     * List of connected sockets
+     *
+     * @var array
+     */
+    private $_sockets  = array();
 
     /**
     * Maps instance/Handlers
     */
-    private $instanceMap;
+    private $_nodes;//private $_nodes = array();
+    private $_readers;
 
     const HANDLERS_NS = '\Handlers\\';
 
@@ -95,26 +91,25 @@ class Manager {
     public function __construct(Array $conf, Array $handlerConf)
     {
         if (isset($conf['host'])) {
-            $this->host = $conf['host'];
+            $this->_host = $conf['host'];
         }
 
         if (isset($conf['port'])) {
-            $this->port = $conf['port'];
+            $this->_port = $conf['port'];
         }
 
         if ($conf['maxConnection']) {
-            $this->maxConnection = $conf['maxConnection'];
+            $this->_maxConnection = $conf['maxConnection'];
         }
 
         if ($conf['polling']) {
-            $this->polling = $conf['polling'];
+            $this->_polling = $conf['polling'];
         }
 
-        $this->master = $this->__createMaster($this->host, $this->port);
-        $this->sockets[(int)$this->master] = $this->master;
-        $this->readersMap = array();//
-
-        $this->instanceMap = array();//
+        $this->_master = $this->__createMaster($this->_host, $this->_port);
+        $this->_sockets[(int)$this->_master] = $this->_master;
+        $this->_readers = array();
+        $this->_nodes = array();
 
         $iterator = new \DirectoryIterator($handlerConf['path']);
         foreach ($iterator as $fileinfo) {
@@ -122,7 +117,7 @@ class Manager {
             if ($fileinfo->isFile()) {
 
                 require_once ($handlerConf['path'] . '/' .$fileinfo->getFilename());
-                $this->handlersAvailable[] = self::HANDLERS_NS . substr(
+                $this->_handlersAvailable[] = self::HANDLERS_NS . substr(
                     $fileinfo->getFilename(),
                     0,
                     strpos($fileinfo->getFilename(), '.')
@@ -148,20 +143,21 @@ class Manager {
     public function listen()
     {
         // Listen for connections
-        socket_listen($this->master, $this->maxConnection);
+        socket_listen($this->_master, $this->_maxConnection);
 
         while (true) {
 
-            $read = $this->sockets;
-            if (socket_select($read, $_w =  NULL, $_e = NULL, $this->polling) < 1) continue;
+            $read = $this->_sockets;
+            if (socket_select($read, $_w =  NULL, $_e = NULL, $this->_polling) < 1) continue;
 
-            if (in_array($this->master, $read)) {
+            if (in_array($this->_master, $read)) {
 
                 $read = $this->__connect($read);
             }
             foreach ($read as $active) {
 
-                $read_sock = $this->readersMap[(int)$active]->getClient($active);
+                $instance = $this->_readers[(int)$active];
+                $read_sock = $instance->getClient($active);
                 // check if the client is disconnected
                 if ($read_sock->eof()) {
 
@@ -171,7 +167,7 @@ class Manager {
                 // read buffer
                 if ($data = new Frame($read_sock->read(self::BYTE_READS))) {
 
-                      $this->readersMap[(int)$active]->dispatch($read_sock, $data);
+                      $instance->dispatch($read_sock, $data);
                 }
             } // end of reading foreach
         }
@@ -183,28 +179,27 @@ class Manager {
     protected function __connect (Array $read)
     {
         // accept the client, and add him to the $clients array
-        $newsock = socket_accept($this->master);
+        $newsock = socket_accept($this->_master);
         $newUser = new Client($newsock);
-        $this->sockets[(int)$newsock] = $newsock;
+        $this->_sockets[(int)$newsock] = $newsock;
 
-        $objHeader = new Headers($newUser->read(self::BYTE_READS));
+        $objHeader = new Handshake($newUser->read(self::BYTE_READS));
         $handler = $objHeader->getHandler();
         $instance = $objHeader->getInstance();
 
-        if (in_array($handler, $this->handlersAvailable) && $newUser->write($objHeader->getResponseHeaders())) {
+        if (in_array($handler, $this->_handlersAvailable) && $newUser->write($objHeader->getResponseHeaders())) {
 
-            $newUser->handshakeDone();
+            if (isset($this->_nodes[$handler.'/'.$instance])) {
 
-            if (isset($this->instanceMap[$handler.'/'.$instance])) {
-
-                $handlerObj = $this->instanceMap[$handler.'/'.$instance]->getInstance($newsock, $newUser);
+                $handlerObj = $this->_nodes[$handler.'/'.$instance]->getInstance($newsock, $newUser);
             } else {
 
                 $handlerObj = new $handler($instance, $newsock, $newUser);
-                $this->instanceMap[$handler.'/'.$instance] = $handlerObj;
+                $this->_nodes[$handler.'/'.$instance] = $handlerObj;
             }
 
-            $this->readersMap[(int)$newsock] = $handlerObj;
+            $this->_readers[(int)$newsock] = $handlerObj;
+            $newUser->handshakeDone();
             socket_getpeername($newsock, $ip);
             echo "New client connected: {$ip}\n";
             // remove the listening socket from the clients-with-data array
@@ -215,7 +210,7 @@ class Manager {
             echo "Unable to handle handshake";
         }
         // remove master
-        unset($read[array_search($this->master, $read)]);
+        unset($read[array_search($this->_master, $read)]);
         return $read;
     }
 
@@ -225,9 +220,9 @@ class Manager {
     protected function __disconnect (Client $socket)
     {
         $idx = (int)$socket->getResource();
-        $this->readersMap[$idx]->removeClient($idx);
-        unset($this->sockets[$idx]);
-        unset($this->readersMap[$idx]);
+        $this->_readers[$idx]->removeClient($idx);
+        unset($this->_sockets[$idx]);
+        unset($this->_readers[$idx]);
         $socket->close();
         echo "client disconnected.\n";
     }

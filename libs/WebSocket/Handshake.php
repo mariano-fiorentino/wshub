@@ -21,7 +21,7 @@
 
 namespace WebSocket;
 
-class Headers {
+class Handshake {
 
     const BLANK = " ";
     const PROTOCOL = 'HTTP/1.1';
@@ -88,7 +88,6 @@ class Headers {
         $this->_addLine(
             self::SEC_WEBSOCKET_PROTOCOL.":".self::BLANK.$this->_outHeaders[self::SEC_WEBSOCKET_PROTOCOL]
         );
-
         return $this->_endHandshake();
     }
 

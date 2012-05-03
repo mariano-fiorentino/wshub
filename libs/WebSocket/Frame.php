@@ -42,7 +42,7 @@ original-octet-i = transformed-octet-i XOR masking-key-octet-j
 
 
 8185d47a594f9c1f3523bb
-Hello
+Helloframes of this message follow
 
 x81 x85
 1000 0001 1000 0101
@@ -78,98 +78,106 @@ use WebSocket\FrameParts as Part;
 
 class Frame {
 
-    private $framePayloadData = array();//     ; n*8 bits in length
-    private $hexData = array();
-    private $frameMask;
-    private $dataOffset = 2;
-    private $decodedText = '';
-    private $binaryData;
+    private $_framePayloadData = array();
+    private $_chunks = array();
+    private $_frameMask;
+    private $_dataOffset = 2;
+    private $_decodedText = '';
+    private $_binaryData;
 
     const MASK_LENGTH = 4;
+    const TEXT_FRAME = 1;
+    const FINAL_FRAME = 1;
 
     public function __construct($data)
     {
-        $this->binaryData = $data;
-        $this->hexData = $this->_getMatrixData($data);
+        $this->headers = new Part\Headers();
 
-        $this->firstByte = new Part\FirstByte($this->hexData[0]);
-        $this->secondByte = new Part\SecondByte($this->hexData[1]);
+        $this->_binaryData = $data;
+        $this->_chunks = $this->_getChunkedData($data);
 
-        if($this->secondByte->isMasked()) {
+        $this->headers->setFirstByte($this->_chunks[0]);
+        $this->headers->setSecondByte($this->_chunks[1]);
 
-            $this->frameMask = new Part\Mask(array_slice($this->hexData ,$this->dataOffset, self::MASK_LENGTH));
-            $this->dataOffset += self::MASK_LENGTH;
+        if ($this->headers->isExtendedLength()) {
+
+            $this->headers->setExtendedLength(
+                array_slice($this->_chunks ,$this->_dataOffset, $this->headers->getExtendedChunks())
+            );
+            $this->_dataOffset += $this->headers->getExtendedChunks();
         }
 
-        $this->framePayloadData = array_slice(
-            $this->hexData,
-            $this->dataOffset,
-            $this->secondByte->getLength()
-        );
-        foreach ($this->framePayloadData as $idx => $char) {
+        if($this->headers->isMasked()) {
 
-            $this->decodedText .= chr($this->encodeDecodeMask($char, $this->frameMask->getMask(), $idx));
+            $this->_frameMask = new Part\Mask(array_slice($this->_chunks ,$this->_dataOffset, self::MASK_LENGTH));
+            $this->_dataOffset += self::MASK_LENGTH;
+        }
+
+        $this->_framePayloadData = array_slice(
+            $this->_chunks,
+            $this->_dataOffset,
+            $this->headers->getLength()
+        );
+        foreach ($this->_framePayloadData as $idx => $char) {
+
+            $this->_decodedText .= chr($this->encodeDecodeMask($char, $this->_frameMask->getMask(), $idx));
         }
     }
 
-    private function _getMatrixData($data)
+    private function _getChunkedData($data)
     {
-        $hex = bin2hex($data);
-        preg_match_all("/\w{2}/", $hex, $result);
-        foreach ($result[0] as &$res){
-
-            $res = (int)base_convert($res,16,10);
+        $result = str_split($data);
+        foreach ($result as &$res){
+            $res = ord($res);
         }
-        return $result[0];
+        return $result;
     }
 
     public function buildSimpleMaskedFrame($text)
     {
         $frame = '';
-        $frame .=  $this->_chatOutput(
-            bindec("10000001")
+        //Hello Zvika,
+        //this problem happen usually when we have high load on apache, the only strange
+        $bytes = $this->headers->buildChunkedHeader(
+            self::FINAL_FRAME,
+            self::TEXT_FRAME,
+            strlen($text)
         );
-        $length = str_pad(
-            base_convert(strlen($text), 10, 2),
-        7, 0, STR_PAD_LEFT);
+        foreach ($bytes as $byte) {
 
-        $frame .= $this->_chatOutput(
-            bindec($this->secondByte->isMasked() . "$length")
-        );
+            $frame .= $this->_chatOutput($byte);
+        }
+        if ("1" === $this->headers->isMasked()) {
 
-        if ("1" === $this->secondByte->isMasked()) {
-
-            foreach ($this->frameMask->getMask() as $mask) {
+            foreach ($this->_frameMask->getMask() as $mask) {
 
                 $frame .= $this->_chatOutput($mask);
             }
         }
         foreach (str_split($text) as $idx => $char) {
 
-            $masked = $this->encodeDecodeMask(ord($char), $this->frameMask->getMask(), $idx);
+            $masked = $this->encodeDecodeMask(ord($char), $this->_frameMask->getMask(), $idx);
             $frame .= $this->_chatOutput($masked);
         }
         return $frame;
     }
-
 
     public function encodeDecodeMask($char, $keys, $idx)
     {
         return $char ^ $keys[$idx % self::MASK_LENGTH];
     }
 
-
     public function getOriginalData()
     {
-        return $this->binaryData;
+        return $this->_binaryData;
     }
 
     public function getDecodedText()
     {
-        return $this->decodedText;
+        return $this->_decodedText;
     }
 
-    public function _chatOutput($data)
+    protected function _chatOutput($data)
     {
         return chr($data);
     }
