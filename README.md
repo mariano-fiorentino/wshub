@@ -5,18 +5,18 @@ Php websocket platform
 
 
 - 1/5/12  Added support to multiple instance per handler
+- 3/5/12  Added support to buffers over 127 Bytes
 
 
 TODO:
 
 - Auth excepetions
-- Buffers over 127 Bytes
 - Binary io
 - Multiple io frames
 - Logs
 - Docs
-- Hiphop support
-- clone instance
+- Apache support
+- clone instances
 - select instance
 - extend Client properties 
 - deploy handlers
