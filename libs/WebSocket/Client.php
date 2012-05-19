@@ -25,7 +25,7 @@ class Client {
 
     private $fd;
     private $handshake = false;
-
+    private $name;
     private $buffer = '';
 
     public function __construct ($fd)
@@ -33,24 +33,29 @@ class Client {
         $this->fd = $fd;
     }
 
-    public function read($length, $type = PHP_BINARY_READ)
+    public function setName ($string)
     {
-        return socket_read ($this->fd, $length, $type);
+        $this->name = $string;
+    }
+
+    public function read($length)
+    {
+        return fread($this->fd, $length);
     }
 
     public function write($msg)
     {
-       return socket_write($this->fd, $msg, strlen($msg));
+        return fwrite($this->fd, $msg, strlen($msg));
     }
 
     public function close()
     {
-       socket_close($this->fd);
+        fclose($this->fd);
     }
 
     public function eof()
     {
-        return !socket_recv ($this->fd, $buf = NULL , 1, MSG_PEEK);
+        return feof($this->fd);
     }
 
     public function getResource()

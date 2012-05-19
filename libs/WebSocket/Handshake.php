@@ -50,7 +50,6 @@ class Handshake {
     public function __construct ($buffer)
     {
         $this->_inputHeaders = http_parse_headers($buffer);
-
         $this->_handler = self::HANDLER_NS . str_replace('/', '\\', dirname($this->_inputHeaders['Request Url']));
         $this->_instance = basename($this->_inputHeaders['Request Url']);
     }
