@@ -55,7 +55,6 @@ $_loadClasses(LIBS_PATH);
 $config = parse_ini_file (CONF_PATH, true);
 
 $master = new Manager (
-    $config['server'],
-    $config['handlers']
+    parse_ini_file (CONF_PATH, true)
 );
 $master->listen();
