@@ -52,8 +52,6 @@ $_loadClasses = function ($path) use (&$_loadClasses)
 
 $_loadClasses(LIBS_PATH);
 
-$config = parse_ini_file (CONF_PATH, true);
-
 $master = new Manager (
     parse_ini_file (CONF_PATH, true)
 );
