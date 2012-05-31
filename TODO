@@ -1,4 +1,4 @@
-- Auth excepetions
+- Auth exceptions
 - Buffers over 127 Bytes
 - Binary io
 - Multiple io frames

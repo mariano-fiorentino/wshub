@@ -10,7 +10,7 @@ Php websocket platform
 
 TODO:
 
-- Auth excepetions
+- Auth exceptions
 - Binary io
 - Multiple io frames
 - Logs
@@ -23,7 +23,7 @@ TODO:
 - limits on resource
 
 
-Liberally inspired from:
+Liberally inspired by:
 
 http://code.google.com/p/phpwebsocket/
- 
+
