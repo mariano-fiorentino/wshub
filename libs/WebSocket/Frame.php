@@ -136,8 +136,6 @@ class Frame {
     public function buildSimpleMaskedFrame($text)
     {
         $frame = '';
-        //Hello Zvika,
-        //this problem happen usually when we have high load on apache, the only strange
         $bytes = $this->headers->buildChunkedHeader(
             self::FINAL_FRAME,
             self::TEXT_FRAME,
